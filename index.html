@@ -48,8 +48,7 @@ async function fetchRemoteOffers(){
   p.set("select","id,title,business,description,category,discount_percent,latitude,longitude,city,country_code,source_url,source_type,verification_status,valid_from,expires_at,created_at");
   p.set("status","eq.published");
   p.set("verification_status","in.(merchant_confirmed,admin_verified)");
-  p.set("latitude","gte."+(center.lat-latPad)); p.append("latitude","lte."+(center.lat+latPad));
-  p.set("longitude","gte."+(center.lon-lonPad)); p.append("longitude","lte."+(center.lon+lonPad));
+  p.set("and","(latitude.gte."+(center.lat-latPad)+",latitude.lte."+(center.lat+latPad)+",longitude.gte."+(center.lon-lonPad)+",longitude.lte."+(center.lon+lonPad)+")");
   p.set("limit","300"); p.set("order","created_at.desc");
   const response=await fetch(url,{headers:{apikey:cfg.supabasePublishableKey,Authorization:"Bearer "+cfg.supabasePublishableKey,Accept:"application/json"}});
   if(!response.ok)throw new Error("Shared offer database returned "+response.status);
@@ -88,7 +87,7 @@ function render(){
  if(savedOffers.length) html='<div style="padding:12px 5px 4px;font-size:11px;font-weight:800;color:#168653">PUBLISHED OFFERS ('+savedOffers.length+')</div>'+offerHtml;
  if(arr.length) html+='<div style="padding:12px 5px 4px;font-size:11px;font-weight:800;color:#625b70">NEARBY BUSINESSES ('+arr.length+')</div>'+businessHtml;
  if(!savedOffers.length&&!arr.length) html='<div class="empty">No nearby businesses or saved offers were found in this category within '+radius+' km. Try another category or increase the radius.</div>';
- else if(!savedOffers.length) html='<div class="notice">No DealRadar offers have been published in this area yet. The businesses below come from OpenStreetMap; they are not confirmed discounts. Live offers from merchants or public promotion feeds are not connected.</div>'+html;
+ else if(!savedOffers.length){const cfg=window.DEALRADAR_CONFIG||{};const message=cfg.supabaseUrl&&cfg.supabasePublishableKey?"No verified offers have been published in this area yet. Businesses below are place listings, not confirmed discounts.":"The shared offer database is not configured yet. Add your Supabase project URL and publishable key to config.js to show verified shared offers.";html='<div class="notice">'+message+'</div>'+html;}
  document.getElementById("cards").innerHTML=html;
  document.querySelectorAll("[data-detail]").forEach(btn=>btn.addEventListener("click",()=>showBusiness(btn.dataset.detail)));
 }function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
