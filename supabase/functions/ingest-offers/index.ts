@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
   let imported = 0, skipped = 0, failed = 0;
   for (const source of (sources || [])) {
     try {
-      if (!source.permission_reference || !source.terms_url) { skipped++; continue; }
+      if (!source.permission_reference || !safeHttps(source.terms_url)) { skipped++; continue; }
       const target = source.source_type === "authorized_api"
         ? safeHttps(Deno.env.get("AUTHORIZED_SOCIAL_API_URL") || "")
         : safeHttps(source.feed_url || source.source_url);
@@ -165,7 +165,7 @@ Deno.serve(async (req) => {
         const json = await response.json();
         candidates = Array.isArray(json.items) ? json.items : [];
       } else {
-        if (source.source_type === "merchant_page" && !await canFetchPage(target)) { skipped++; continue; }
+        if (!await canFetchPage(target)) { skipped++; continue; }
         const response = await fetch(target, { headers: { "User-Agent": "DealRadarBot/1.0 (offer-indexer; contact: admin@dealradar.example)", "Accept": "application/rss+xml, application/atom+xml, application/xml, text/html;q=0.9" } });
         if (!response.ok) throw new Error("Source returned " + response.status);
         const text = await response.text();
