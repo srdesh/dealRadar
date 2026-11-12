@@ -1,0 +1,2 @@
+[functions.ingest-offers]
+verify_jwt = false
