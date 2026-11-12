@@ -131,13 +131,17 @@ function normalize(item: Record<string, string>, source: any, sourceType: string
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   const expected = Deno.env.get("DEALRADAR_INGEST_SECRET") || "";
-  if (!expected || req.headers.get("x-dealradar-ingest-secret") !== expected) {
-    return new Response("Unauthorized", { status: 401 });
-  }
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SECRET_KEY") || "";
   if (!supabaseUrl || !serviceKey) return Response.json({ error: "Missing Supabase server configuration" }, { status: 500, headers: corsHeaders });
   const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+  const suppliedSecret = req.headers.get("x-dealradar-ingest-secret") || "";
+  let authorized = Boolean(expected && suppliedSecret === expected);
+  if (!authorized && suppliedSecret) {
+    const { data, error } = await supabase.rpc("verify_dealradar_ingest_secret", { candidate: suppliedSecret });
+    authorized = !error && data === true;
+  }
+  if (!authorized) return new Response("Unauthorized", { status: 401 });
   let body: any = {};
   try { body = await req.json(); } catch { /* default action */ }
   if (body.action === "expire") {
