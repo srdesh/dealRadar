@@ -25,6 +25,7 @@ create table if not exists public.dealradar_sources (
   updated_at timestamptz not null default now(),
   constraint source_country_code_format check (country_code ~ '^[A-Z]{2}$'),
   constraint source_coordinates_pair check ((latitude is null and longitude is null) or (latitude between -90 and 90 and longitude between -180 and 180)),
+  constraint source_coordinates_required_when_enabled check (not enabled or (latitude is not null and longitude is not null)),
   constraint source_authorization_evidence check (not enabled or (authorized and permission_reference is not null and length(trim(permission_reference)) > 0))
 );
 
@@ -60,7 +61,7 @@ create table if not exists public.offers (
   constraint offer_expiry_after_start check (expires_at is null or valid_from is null or expires_at > valid_from)
 );
 
-create unique index if not exists offers_source_url_unique on public.offers(source_url) where source_url is not null;
+create unique index if not exists offers_source_url_unique on public.offers(source_url);
 create index if not exists offers_publication_expiry_idx on public.offers(status, expires_at, created_at desc);
 create index if not exists offers_location_idx on public.offers(latitude, longitude);
 create index if not exists offers_category_idx on public.offers(category, status);
