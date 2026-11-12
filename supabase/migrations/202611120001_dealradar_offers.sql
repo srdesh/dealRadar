@@ -71,7 +71,9 @@ alter table public.offers enable row level security;
 
 revoke all on public.dealradar_sources from anon, authenticated;
 grant select on public.offers to anon, authenticated;
-revoke insert, update, delete on public.offers from anon, authenticated;
+grant insert, update, delete on public.offers to authenticated;
+grant select, insert, update, delete on public.dealradar_sources to authenticated;
+revoke insert, update, delete on public.offers from anon;
 
 drop policy if exists "Public can read current verified published offers" on public.offers;
 create policy "Public can read current verified published offers"
